@@ -1,4 +1,4 @@
-import {companyBaseline,evaluateOrder} from '../src/decision.js';
+import {companyBaseline,evaluateOrder} from './decision.js';
 
 const $=id=>document.getElementById(id);
 const yen=v=>v===null||v===undefined?'—':Math.round(v).toLocaleString('ja-JP')+'円';
