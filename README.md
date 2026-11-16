@@ -38,9 +38,9 @@ The company profile can be stored in browser localStorage. The result can be exp
 
 ## Model boundary
 
-Unchanged fixed costs remain important for company profitability but are not charged again to an incremental accept/reject decision.
+Unchanged fixed costs remain important for company profitability but are not charged again to an incremental accept/reject decision. Cost attribution (labor/equipment/materials/etc.) is kept separate from economic relevance (whether the decision changes or avoids the cost).
 
-Relevant costs include order materials, incremental labor/overtime, incremental equipment, external processing, decision-triggered new lease/shift/warehouse/machine cost, and known displaced-order opportunity cost.
+Relevant costs include order materials, incremental labor/overtime, incremental equipment, external processing, avoidable fixed costs, decision-triggered step-fixed costs, and known displaced-order opportunity cost. Sunk costs and unchanged allocations are excluded from the incremental decision even when accounting systems assign them to a product or department.
 
 Existing rent, unchanged depreciation, and unchanged head-office allocations are normally irrelevant to a one-order incremental decision unless the decision actually changes them.
 
@@ -51,7 +51,7 @@ Existing rent, unchanged depreciation, and unchanged head-office allocations are
 - GitHub Actions runs tests and syntax checks
 - Cloudflare/Stripe are optional future commercial layers; calculation correctness does not depend on either
 
-See docs/MODEL.md and docs/LOCAL_CONNECTION_PLAN.md.
+See docs/MODEL.md, docs/COST_TAXONOMY.md, and docs/LOCAL_CONNECTION_PLAN.md.
 
 ## Current scope
 
