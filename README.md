@@ -26,3 +26,5 @@ Run:
 npm test
 npm run check
 ```
+
+CI: GitHub Actions runs the unit test and syntax check on pull requests.
