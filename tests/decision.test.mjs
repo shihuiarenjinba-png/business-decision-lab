@@ -94,3 +94,19 @@ test('bottleneck ranking favors accepted orders with stronger contribution per t
 test('invalid resource usage fails closed',()=>{
   assert.throws(()=>evaluateOrder({...profile,resources:[{id:'x',capacityHours:10,usedHours:11}]},{revenue:100}),/cannot exceed/);
 });
+
+
+test('additional classified costs affect order only when economically relevant',()=>{
+  const x=evaluateOrder(profile,{
+    revenue:1_000_000,
+    materials:400_000,
+    additionalCostItems:[
+      {name:'existing depreciation allocation',amount:100_000,behavior:'allocated',attribution:'equipment',changesWithDecision:false,avoidable:false},
+      {name:'overtime',amount:80_000,behavior:'variable',attribution:'labor',changesWithDecision:true}
+    ]
+  });
+  assert.equal(x.order.additionalCostClassification.relevantTotal,80_000);
+  assert.equal(x.order.additionalCostClassification.excludedTotal,100_000);
+  assert.equal(x.order.relevantCostTotal,480_000);
+  assert.equal(x.order.incrementalContribution,520_000);
+});
