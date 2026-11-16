@@ -1,0 +1,11 @@
+{
+  "name": "business-decision-lab",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Lightweight management-accounting decision support for order and capacity decisions",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "check": "npm test && node --check src/decision.js"
+  }
+}
