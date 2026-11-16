@@ -1,3 +1,5 @@
+import {classifyDecisionCosts} from './costs.js';
+
 function finite(name, value, {min = -Infinity, max = Infinity} = {}) {
   const n = Number(value);
   if (!Number.isFinite(n) || n < min || n > max) {
@@ -102,6 +104,7 @@ function normalizeResources(resources = []) {
 }
 
 function relevantOrderCosts(order = {}) {
+  const classifiedAdditional = classifyDecisionCosts(order.additionalCostItems ?? []);
   const costs = {
     materials: finite('order.materials', order.materials ?? 0, {min: 0}),
     external: finite('order.external', order.external ?? 0, {min: 0}),
@@ -109,16 +112,21 @@ function relevantOrderCosts(order = {}) {
     incrementalEquipment: finite('order.incrementalEquipment', order.incrementalEquipment ?? 0, {min: 0}),
     other: finite('order.otherRelevantCost', order.otherRelevantCost ?? 0, {min: 0}),
     stepFixed: finite('order.stepFixedCost', order.stepFixedCost ?? 0, {min: 0}),
-    knownOpportunityCost: finite('order.knownOpportunityCost', order.knownOpportunityCost ?? 0, {min: 0})
+    knownOpportunityCost: finite('order.knownOpportunityCost', order.knownOpportunityCost ?? 0, {min: 0}),
+    additionalClassified: classifiedAdditional.relevantTotal
   };
-  return {costs, total: Object.values(costs).reduce((a, b) => a + b, 0)};
+  return {
+    costs,
+    total: Object.values(costs).reduce((a, b) => a + b, 0),
+    additionalCostClassification: classifiedAdditional
+  };
 }
 
 export function evaluateOrder(profile, order) {
   const baseline = companyBaseline(profile);
   const revenue = finite('order.revenue', order.revenue, {min: 0});
   const units = optionalFinite('order.units', order.units, {min: 0});
-  const {costs: relevantCosts, total: relevantCostTotal} = relevantOrderCosts(order);
+  const {costs: relevantCosts, total: relevantCostTotal, additionalCostClassification} = relevantOrderCosts(order);
   const incrementalContribution = revenue - relevantCostTotal;
 
   const resources = normalizeResources(profile.resources);
@@ -170,7 +178,8 @@ export function evaluateOrder(profile, order) {
       incrementalContribution,
       incrementalMarginRate: revenue > 0 ? incrementalContribution / revenue : null,
       breakEvenRevenue: relevantCostTotal,
-      breakEvenUnitPrice: units && units > 0 ? relevantCostTotal / units : null
+      breakEvenUnitPrice: units && units > 0 ? relevantCostTotal / units : null,
+      additionalCostClassification
     },
     after,
     operatingProfitChange: incrementalContribution,
@@ -190,7 +199,8 @@ export function evaluateOrder(profile, order) {
       'Unchanged fixed operating costs remain in company-level profitability and are not allocated again to this incremental accept/reject decision.',
       'Step-fixed costs are included only when the order actually triggers a new commitment such as an added shift, lease, machine, or warehouse.',
       'Opportunity cost is included only when supplied as a known or separately validated value; this engine does not fabricate future orders.',
-      'Capacity is a deterministic planning constraint. A positive incremental contribution does not override a capacity breach.'
+      'Capacity is a deterministic planning constraint. A positive incremental contribution does not override a capacity breach.',
+      'Cost attribution labels such as labor/equipment/materials describe where a cost arises; relevance is determined separately by whether the decision changes or avoids that cost.'
     ]
   };
 }
