@@ -1,25 +1,48 @@
-# Decision model v0.1
+# Decision model v1
 
-## Goal
-Compare the current company state with the state after accepting a specific order without pretending that uncertain future demand is known.
+## Objective
 
-## Two views
-1. **Long-run company structure**: revenue, variable costs, normal fixed operating costs, contribution, operating profit, labor/equipment capacity.
-2. **Incremental order decision**: only costs and capacity changes caused by the order, plus any explicitly known opportunity cost.
+Compare the current enterprise state with the state after accepting a specific order without pretending uncertain future demand is known.
 
-## Important accounting rule
-An unchanged monthly rent or other fixed operating cost is part of the company's long-run profitability, but it is not charged again merely because one extra order is evaluated. If an order forces a new machine lease, new shift, new warehouse, or other step-fixed commitment, that incremental fixed cost is relevant and must be included.
+## 1. Company-level accounting view
 
-## Capacity
-Resources are explicit objects with available and used hours. An order can be profitable on incremental cost and still be placed on HOLD if it exceeds a labor/equipment bottleneck.
+Revenue - Variable costs = Contribution - Fixed labor cost - Depreciation - Occupancy cost - Other fixed operating costs = Operating profit.
 
-## Opportunity loss
-v0.1 never estimates future opportunity loss from a short history. A known displaced order or a separately validated statistical model may provide an opportunity-cost input later.
+This view answers whether the company structure is profitable. These costs are not automatically reallocated into every incremental order decision.
 
-## Next
-- company setup UI
-- order input UI
-- before/after dashboard
-- break-even order price
-- resource bottleneck ranking
-- historical order module only after data sufficiency rules are defined
+## 2. Labor-time diagnostic
+
+The model intentionally avoids revenue / employee count as an employee-value measure because revenue is jointly produced by labor, capital, equipment and other assets.
+
+When detailed fixed-cost data exists, it also shows contribution minus explicit non-labor fixed costs, divided by available labor hours. This is a planning proxy, not a causal estimate of employee contribution.
+
+## 3. Incremental order decision
+
+Order revenue - materials - external processing - incremental labor - incremental equipment - other relevant cost - step-fixed cost - known opportunity cost = incremental contribution.
+
+Unchanged rent, existing depreciation and other sunk/unchanged allocations are not charged again merely because an extra order is evaluated.
+
+## 4. Capacity
+
+Each resource has capacity hours, used hours, order-added hours, before/after utilization, remaining hours after the order, and a capacity-breach flag. A positive incremental contribution does not override a capacity breach.
+
+## 5. Break-even
+
+- Break-even order revenue = relevant-cost total
+- Break-even unit price = relevant-cost total / units
+
+## 6. Opportunity cost
+
+The engine never invents future orders. Opportunity cost is included only when a known alternative order is displaced or a separately validated historical/statistical model supplies an estimate. Short histories alone are not treated as precise forecasts.
+
+## 7. Multi-order prioritization
+
+rankOrdersByBottleneck ranks candidate orders by decision status and incremental contribution per hour of the tightest used resource. It is a prioritization aid, not a full integer-programming production scheduler.
+
+## Exclusions
+
+- extraordinary/special losses unless explicitly relevant to the decision
+- tax optimization
+- financing decisions
+- stochastic future-order opportunity-loss estimation
+- causal employee performance attribution
