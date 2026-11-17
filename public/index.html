@@ -11,50 +11,97 @@
     <div><strong>Business Decision Lab</strong><span class="badge">LOCAL FIRST</span></div>
     <span class="muted">受注・Relevant Cost・Capacity判断</span>
   </header>
+
   <main class="layout">
-    <section class="panel">
-      <h1>企業の現在地</h1>
-      <p class="lead">売上を従業員だけの成果とはみなさず、変動費・労務固定費・減価償却・占有費などを分離して企業全体を評価します。</p>
-      <form id="companyForm" class="grid">
-        <label>月間売上<input id="monthlyRevenue" type="number" min="0" value="5000000"></label>
-        <label>変動費<input id="variableCosts" type="number" min="0" value="3000000"></label>
-        <label>固定労務費<input id="fixedLaborCost" type="number" min="0" value="900000"></label>
-        <label>減価償却<input id="depreciation" type="number" min="0" value="250000"></label>
-        <label>家賃・占有費<input id="occupancyCost" type="number" min="0" value="200000"></label>
-        <label>その他固定営業費<input id="otherFixedOperatingCosts" type="number" min="0" value="150000"></label>
-        <label>従業員数<input id="employeeCount" type="number" min="0" step="1" value="7"></label>
-        <label>1人あたり月間稼働可能時間<input id="paidHoursPerEmployee" type="number" min="0" value="160"></label>
-        <label>労働 capacity<input id="laborCapacity" type="number" min="0" value="1120"></label>
-        <label>労働 使用時間<input id="laborUsed" type="number" min="0" value="780"></label>
-        <label>設備 capacity<input id="machineCapacity" type="number" min="0" value="180"></label>
-        <label>設備 使用時間<input id="machineUsed" type="number" min="0" value="150"></label>
-      </form>
-      <div id="baselineCards" class="cards"></div>
-      <p class="note">「労働時間あたり残余」は従業員の因果的な価値ではありません。変動費と明示的な非労務固定費を差し引いた後、労働capacityで割った企業診断用の代理指標です。</p>
+    <section class="hero panel">
+      <div>
+        <p class="eyebrow">EXPLAINABLE MANAGEMENT ACCOUNTING</p>
+        <h1>費用の発生源と、意思決定上のRelevant Costを分ける</h1>
+        <p class="lead">売上は労働・設備・材料・占有・外注・資本などの組み合わせで生じます。このツールは、企業全体の採算と個別受注の増分判断を混同せずに比較します。</p>
+      </div>
+      <div class="control-stack">
+        <label>検証用fixture / Sample dataset
+          <select id="fixtureSelect"></select>
+        </label>
+        <button id="loadFixture" type="button">fixtureを読み込む</button>
+      </div>
+      <p id="fixtureDescription" class="note wide"></p>
     </section>
 
     <section class="panel">
-      <h2>新規受注を評価</h2>
-      <form id="orderForm" class="grid">
-        <label>案件名<input id="orderName" value="Order A"></label>
-        <label>受注売上<input id="orderRevenue" type="number" min="0" value="1000000"></label>
-        <label>数量<input id="orderUnits" type="number" min="0" value="100"></label>
-        <label>材料費<input id="materials" type="number" min="0" value="500000"></label>
-        <label>追加労務費<input id="incrementalLabor" type="number" min="0" value="100000"></label>
-        <label>追加設備費<input id="incrementalEquipment" type="number" min="0" value="0"></label>
-        <label>外注費<input id="external" type="number" min="0" value="0"></label>
-        <label>その他Relevant Cost<input id="otherRelevantCost" type="number" min="0" value="0"></label>
-        <label>Step-fixed cost<input id="stepFixedCost" type="number" min="0" value="0"></label>
-        <label>既知の機会費用<input id="knownOpportunityCost" type="number" min="0" value="0"></label>
-        <label>必要労働時間<input id="orderLaborHours" type="number" min="0" value="60"></label>
-        <label>必要設備時間<input id="orderMachineHours" type="number" min="0" value="10"></label>
-      </form>
-      <div class="actions">
-        <button id="evaluate" type="button">判断する</button>
-        <button id="saveProfile" class="secondary" type="button">企業設定を端末保存</button>
-        <button id="exportJson" class="secondary" type="button">結果JSON</button>
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">COMPANY VIEW</p>
+          <h2>企業の現在地</h2>
+        </div>
+        <span class="scope-tag enterprise">企業全体</span>
       </div>
-      <div id="decisionBanner" class="decision"></div>
+      <p class="lead">通常営業に必要な固定費を除外せず、企業構造としての営業利益を確認します。</p>
+      <form id="companyForm" class="grid">
+        <label>月間売上 / Revenue<input id="monthlyRevenue" type="number" min="0" value="5000000" required></label>
+        <label>変動費 / Variable costs<input id="variableCosts" type="number" min="0" value="3000000" required></label>
+        <label>固定労務費 / Fixed labor<input id="fixedLaborCost" type="number" min="0" value="900000" required></label>
+        <label>減価償却 / Depreciation<input id="depreciation" type="number" min="0" value="250000" required></label>
+        <label>家賃・占有費 / Occupancy<input id="occupancyCost" type="number" min="0" value="200000" required></label>
+        <label>その他固定営業費 / Other fixed<input id="otherFixedOperatingCosts" type="number" min="0" value="150000" required></label>
+        <label>従業員数 / Employees<input id="employeeCount" type="number" min="0" step="1" value="7" required></label>
+        <label>1人あたり稼働可能時間<input id="paidHoursPerEmployee" type="number" min="0" value="160" required></label>
+        <label>労働 capacity<input id="laborCapacity" type="number" min="0" value="1120" required></label>
+        <label>労働 使用時間<input id="laborUsed" type="number" min="0" value="780" required></label>
+        <label>設備 capacity<input id="machineCapacity" type="number" min="0" value="180" required></label>
+        <label>設備 使用時間<input id="machineUsed" type="number" min="0" value="150" required></label>
+      </form>
+      <div id="baselineCards" class="cards"></div>
+      <p class="note">「非労務固定費控除後残余 / 時」は企業診断用の代理指標であり、従業員が売上を単独で生んだという因果的評価ではありません。</p>
+    </section>
+
+    <section class="panel">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">ORDER VIEW</p>
+          <h2>個別受注を評価</h2>
+        </div>
+        <span class="scope-tag decision-scope">増分判断</span>
+      </div>
+      <form id="orderForm" class="grid">
+        <label>案件名 / Order name<input id="orderName" value="Order A" required></label>
+        <label>受注売上 / Revenue<input id="orderRevenue" type="number" min="0" value="1000000" required></label>
+        <label>数量 / Units<input id="orderUnits" type="number" min="0" value="100"></label>
+        <label>材料費 / Materials<input id="materials" type="number" min="0" value="500000" required></label>
+        <label>追加労務費 / Incremental labor<input id="incrementalLabor" type="number" min="0" value="100000" required></label>
+        <label>追加設備費 / Incremental equipment<input id="incrementalEquipment" type="number" min="0" value="0" required></label>
+        <label>外注費 / External<input id="external" type="number" min="0" value="0" required></label>
+        <label>その他Relevant Cost<input id="otherRelevantCost" type="number" min="0" value="0" required></label>
+        <label>Step-fixed cost<input id="stepFixedCost" type="number" min="0" value="0" required></label>
+        <label>既知の機会費用<input id="knownOpportunityCost" type="number" min="0" value="0" required></label>
+        <label>必要労働時間<input id="orderLaborHours" type="number" min="0" value="60" required></label>
+        <label>必要設備時間<input id="orderMachineHours" type="number" min="0" value="10" required></label>
+      </form>
+
+      <div class="subsection">
+        <div class="section-heading compact">
+          <div>
+            <h3>追加費用エディタ / Generic Cost Items</h3>
+            <p class="note">attribution（発生源）とは別に、behaviorと意思決定による変化からRelevant Costを判定します。</p>
+          </div>
+          <button id="addCostItem" class="secondary" type="button">＋ 費用を追加</button>
+        </div>
+        <div class="table-wrap editor-wrap">
+          <table class="cost-editor">
+            <thead>
+              <tr><th>費用名</th><th>金額</th><th>Behavior</th><th>Attribution</th><th>変化</th><th>回避可</th><th>発生</th><th>既知</th><th>企業費用</th><th></th></tr>
+            </thead>
+            <tbody id="costEditorRows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="evaluate" type="button">この案件を判断</button>
+        <button id="saveCandidate" class="secondary" type="button">候補に保存 / 更新</button>
+        <button id="newCandidate" class="secondary" type="button">新しい案件</button>
+      </div>
+      <div id="decisionBanner" class="decision" role="status" aria-live="polite"></div>
       <div id="orderCards" class="cards"></div>
       <div class="table-wrap">
         <table>
@@ -62,8 +109,69 @@
           <tbody id="resourceRows"></tbody>
         </table>
       </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">AUDIT TRAIL</p>
+          <h2>Cost Bridge と include / exclude 理由</h2>
+        </div>
+        <span class="scope-tag audit">説明可能</span>
+      </div>
+      <div id="costBridge" class="bridge"></div>
+      <h3>追加費用の判定明細</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>費用</th><th>Behavior</th><th>Attribution</th><th>金額</th><th>受注に算入</th><th>判定</th><th>理由</th></tr></thead>
+          <tbody id="costAuditRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">CANDIDATE COMPARISON</p>
+          <h2>複数案件とシナリオ</h2>
+        </div>
+        <span id="candidateCount" class="scope-tag">0件</span>
+      </div>
+      <p class="lead">候補をボトルネック時間あたり増分利益で優先順位付けします。これは生産スケジューラーではなく、比較のための判断補助です。</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>順位</th><th>案件</th><th>増分利益</th><th>労働時間</th><th>設備時間</th><th>ボトルネック</th><th>利益 / bottleneck時</th><th>Capacity After</th><th>判断</th><th>操作</th></tr></thead>
+          <tbody id="comparisonRows"></tbody>
+        </table>
+      </div>
+      <h3>シナリオ比較 / Scenario comparison</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Scenario</th><th>売上 After</th><th>営業利益 After</th><th>変化</th><th>最大利用率</th><th>Capacity</th><th>判断</th></tr></thead>
+          <tbody id="scenarioRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">LOCAL DATA</p>
+          <h2>端末保存・Import / Export</h2>
+        </div>
+        <span class="scope-tag local">外部送信なし</span>
+      </div>
+      <p class="lead">会社設定と候補案件をブラウザ内に保存、またはJSON / CSVで持ち運べます。データはサーバーへ送信しません。</p>
+      <div class="actions">
+        <button id="saveLocal" type="button">端末に保存</button>
+        <button id="importData" class="secondary" type="button">JSON / CSV Import</button>
+        <button id="exportJson" class="secondary" type="button">JSON Export</button>
+        <button id="exportCsv" class="secondary" type="button">CSV Export</button>
+        <input id="fileInput" class="visually-hidden" type="file" accept=".json,.csv,application/json,text/csv">
+      </div>
+      <p id="dataStatus" class="note" role="status" aria-live="polite"></p>
       <details>
-        <summary>計算上の仮定</summary>
+        <summary>計算上の仮定 / Assumptions</summary>
         <ul id="assumptions"></ul>
       </details>
     </section>

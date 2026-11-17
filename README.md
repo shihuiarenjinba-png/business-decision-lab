@@ -24,6 +24,15 @@ It does **not** treat revenue per employee as employee-attributable output. Mach
 
 A profitable order is still placed on HOLD when it breaches current capacity.
 
+The UI also includes:
+
+- a Generic Cost Item Editor that keeps behavior, attribution and relevance separate
+- explicit INCLUDE / EXCLUDE reasons for every additional cost
+- a Cost Bridge between the enterprise operating view and incremental order view
+- multi-order bottleneck ranking and Current / accepted-order scenario comparison
+- manufacturing, service, capacity, avoidable-fixed, allocated, sunk and known-opportunity fixtures
+- local JSON and CSV import/export for the company profile and candidate orders
+
 ## Local UI
 
 No account or external API is required for the calculation engine.
@@ -34,7 +43,7 @@ No account or external API is required for the calculation engine.
 
 Open: http://localhost:8765/public/
 
-The company profile can be stored in browser localStorage. The result can be exported as JSON. No company data is uploaded by the local UI.
+The company profile and candidate orders can be stored in browser localStorage or moved as JSON/CSV. No company data is uploaded by the local UI.
 
 ## Model boundary
 
