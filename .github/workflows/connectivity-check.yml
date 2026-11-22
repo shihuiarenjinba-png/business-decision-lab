@@ -78,3 +78,46 @@ jobs:
           balance="$(curl -fsS -u "$STRIPE_KEY:" https://api.stripe.com/v1/balance)"
           echo "$balance" | jq -e '.livemode == true' >/dev/null
           echo "Stripe LIVE: authenticated, account ID matched, livemode=true. No mutation performed."
+
+  preview-smoke:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
+    env:
+      CF_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_A_ID }}
+      CF_API_TOKEN: ${{ secrets.CF_ACCOUNT_A_API_TOKEN }}
+      STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+      PROJECT_NAME: business-decision-lab-preview
+      PREVIEW_URL: https://preview.business-decision-lab-preview.pages.dev
+      WEBHOOK_URL: https://preview.business-decision-lab-preview.pages.dev/api/stripe-webhook
+    steps:
+      - name: Verify Cloudflare Pages project
+        shell: bash
+        run: |
+          set -euo pipefail
+          project="$(curl -fsS             -H "Authorization: Bearer $CF_API_TOKEN"             "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/pages/projects/$PROJECT_NAME")"
+          echo "$project" | jq -e --arg name "$PROJECT_NAME"             '.success == true and .result.name == $name' >/dev/null
+          echo "Cloudflare Pages project: present."
+
+      - name: Verify preview application and webhook endpoint
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsS "$PREVIEW_URL/" >/dev/null
+          webhook="$(curl -fsS "$WEBHOOK_URL")"
+          echo "$webhook" | jq -e             '.ok == true and .endpoint == "stripe-webhook" and .method == "POST"' >/dev/null
+          echo "Preview application and webhook endpoint: reachable."
+
+      - name: Verify Stripe TEST webhook registration
+        shell: bash
+        run: |
+          set -euo pipefail
+          endpoints="$(curl -fsS -u "$STRIPE_TEST_SECRET_KEY:"             "https://api.stripe.com/v1/webhook_endpoints?limit=100")"
+          echo "$endpoints" | jq -e --arg url "$WEBHOOK_URL" '
+            any(
+              .data[]?;
+              .url == $url
+              and .status == "enabled"
+              and (.enabled_events | index("checkout.session.completed")) != null
+            )
+          ' >/dev/null
+          echo "Stripe TEST webhook: exact URL registered and enabled."
