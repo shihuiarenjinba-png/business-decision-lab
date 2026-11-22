@@ -9,7 +9,14 @@ function finite(name, value, {min = -Infinity, max = Infinity} = {}) {
 }
 
 function optionalFinite(name, value, options) {
-  if (value === undefined || value === null || value === '') return null;
+  if (value === undefined || value === null || String(value).trim() === '') return null;
+  return finite(name, value, options);
+}
+
+function requiredFinite(name, value, options) {
+  if (value === undefined || value === null || String(value).trim() === '') {
+    throw new Error(`${name} is required`);
+  }
   return finite(name, value, options);
 }
 
@@ -54,7 +61,7 @@ function laborCapacity(profile = {}) {
 }
 
 export function companyBaseline(profile) {
-  const revenue = finite('monthlyRevenue', profile.monthlyRevenue, {min: 0});
+  const revenue = requiredFinite('monthlyRevenue', profile.monthlyRevenue, {min: 0});
   const variableCosts = finite('variableCosts', profile.variableCosts ?? 0, {min: 0});
   const fixed = fixedCostStructure(profile);
   const labor = laborCapacity(profile);
@@ -124,7 +131,7 @@ function relevantOrderCosts(order = {}) {
 
 export function evaluateOrder(profile, order) {
   const baseline = companyBaseline(profile);
-  const revenue = finite('order.revenue', order.revenue, {min: 0});
+  const revenue = requiredFinite('order.revenue', order.revenue, {min: 0});
   const units = optionalFinite('order.units', order.units, {min: 0});
   const {costs: relevantCosts, total: relevantCostTotal, additionalCostClassification} = relevantOrderCosts(order);
   const incrementalContribution = revenue - relevantCostTotal;
