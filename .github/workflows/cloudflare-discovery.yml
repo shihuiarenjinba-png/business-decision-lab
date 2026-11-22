@@ -39,11 +39,13 @@ jobs:
           echo "ACCOUNT_${LABEL}_NAME=$(echo "$account" | jq -r '.result.name')"
           echo "ACCOUNT_${LABEL}_ID=$CF_ACCOUNT_ID"
 
-          pages_http="$(curl -sS -o /tmp/pages.json -w '%{http_code}'             -H "Authorization: Bearer $CF_API_TOKEN"             "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/pages/projects?per_page=100")"
+          pages_http="$(curl -sS -o /tmp/pages.json -w '%{http_code}'             -H "Authorization: Bearer $CF_API_TOKEN"             "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/pages/projects")"
           echo "PAGES_HTTP_${LABEL}=$pages_http"
           if [ "$pages_http" = "200" ]; then
             echo "PAGES_PROJECTS_${LABEL}:"
             jq -r '.result[]? | "  - " + .name + " | subdomain=" + (.subdomain // "") + " | production_branch=" + (.production_branch // "")' /tmp/pages.json
+          else
+            echo "PAGES_ERROR_${LABEL}=$(jq -c '{success,errors}' /tmp/pages.json 2>/dev/null || echo unreadable)"
           fi
 
           workers_http="$(curl -sS -o /tmp/workers.json -w '%{http_code}'             -H "Authorization: Bearer $CF_API_TOKEN"             "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/workers/scripts")"
