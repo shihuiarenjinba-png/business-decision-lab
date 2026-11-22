@@ -36,19 +36,19 @@ jobs:
 
           account="$(curl -fsS             -H "Authorization: Bearer $CF_API_TOKEN"             "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID")"
           echo "$account" | jq -e --arg id "$CF_ACCOUNT_ID" '.success == true and .result.id == $id' >/dev/null
-          echo "ACCOUNT_$LABEL_NAME=$(echo "$account" | jq -r '.result.name')"
-          echo "ACCOUNT_$LABEL_ID=$CF_ACCOUNT_ID"
+          echo "ACCOUNT_${LABEL}_NAME=$(echo "$account" | jq -r '.result.name')"
+          echo "ACCOUNT_${LABEL}_ID=$CF_ACCOUNT_ID"
 
           pages_http="$(curl -sS -o /tmp/pages.json -w '%{http_code}'             -H "Authorization: Bearer $CF_API_TOKEN"             "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/pages/projects?per_page=100")"
-          echo "PAGES_HTTP_$LABEL=$pages_http"
+          echo "PAGES_HTTP_${LABEL}=$pages_http"
           if [ "$pages_http" = "200" ]; then
-            echo "PAGES_PROJECTS_$LABEL:"
+            echo "PAGES_PROJECTS_${LABEL}:"
             jq -r '.result[]? | "  - " + .name + " | subdomain=" + (.subdomain // "") + " | production_branch=" + (.production_branch // "")' /tmp/pages.json
           fi
 
           workers_http="$(curl -sS -o /tmp/workers.json -w '%{http_code}'             -H "Authorization: Bearer $CF_API_TOKEN"             "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/workers/scripts")"
-          echo "WORKERS_HTTP_$LABEL=$workers_http"
+          echo "WORKERS_HTTP_${LABEL}=$workers_http"
           if [ "$workers_http" = "200" ]; then
-            echo "WORKERS_SCRIPTS_$LABEL:"
+            echo "WORKERS_SCRIPTS_${LABEL}:"
             jq -r '.result[]? | "  - " + (.id // .name // "unknown")' /tmp/workers.json
           fi
