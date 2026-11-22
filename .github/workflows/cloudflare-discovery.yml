@@ -1,0 +1,54 @@
+name: Cloudflare infrastructure discovery
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/cloudflare-discovery.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - label: A
+            account_var: CF_ACCOUNT_A_ID
+            token_secret: CF_ACCOUNT_A_API_TOKEN
+          - label: B
+            account_var: CF_ACCOUNT_B_ID
+            token_secret: CF_ACCOUNT_B_API_TOKEN
+    steps:
+      - name: Discover Cloudflare account
+        shell: bash
+        env:
+          LABEL: ${{ matrix.target.label }}
+          CF_ACCOUNT_ID: ${{ vars[matrix.target.account_var] }}
+          CF_API_TOKEN: ${{ secrets[matrix.target.token_secret] }}
+        run: |
+          set -euo pipefail
+          test -n "$CF_ACCOUNT_ID"
+          test -n "$CF_API_TOKEN"
+
+          account="$(curl -fsS             -H "Authorization: Bearer $CF_API_TOKEN"             "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID")"
+          echo "$account" | jq -e --arg id "$CF_ACCOUNT_ID" '.success == true and .result.id == $id' >/dev/null
+          echo "ACCOUNT_$LABEL_NAME=$(echo "$account" | jq -r '.result.name')"
+          echo "ACCOUNT_$LABEL_ID=$CF_ACCOUNT_ID"
+
+          pages_http="$(curl -sS -o /tmp/pages.json -w '%{http_code}'             -H "Authorization: Bearer $CF_API_TOKEN"             "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/pages/projects?per_page=100")"
+          echo "PAGES_HTTP_$LABEL=$pages_http"
+          if [ "$pages_http" = "200" ]; then
+            echo "PAGES_PROJECTS_$LABEL:"
+            jq -r '.result[]? | "  - " + .name + " | subdomain=" + (.subdomain // "") + " | production_branch=" + (.production_branch // "")' /tmp/pages.json
+          fi
+
+          workers_http="$(curl -sS -o /tmp/workers.json -w '%{http_code}'             -H "Authorization: Bearer $CF_API_TOKEN"             "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/workers/scripts")"
+          echo "WORKERS_HTTP_$LABEL=$workers_http"
+          if [ "$workers_http" = "200" ]; then
+            echo "WORKERS_SCRIPTS_$LABEL:"
+            jq -r '.result[]? | "  - " + (.id // .name // "unknown")' /tmp/workers.json
+          fi
