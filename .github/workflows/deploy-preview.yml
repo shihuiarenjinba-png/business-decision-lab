@@ -3,7 +3,13 @@ name: Deploy Business Decision Lab preview
 on:
   workflow_dispatch:
   push:
+    branches: [main]
     paths:
+      - "public/**"
+      - "functions/**"
+      - "server/**"
+      - "tests/**"
+      - "package.json"
       - ".github/workflows/deploy-preview.yml"
 
 permissions:
