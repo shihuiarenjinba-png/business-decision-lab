@@ -1,0 +1,72 @@
+name: External connectivity check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cloudflare-account-a:
+    runs-on: ubuntu-latest
+    env:
+      CF_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_A_ID }}
+      CF_API_TOKEN: ${{ secrets.CF_ACCOUNT_A_API_TOKEN }}
+    steps:
+      - name: Verify Cloudflare account A
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$CF_ACCOUNT_ID"
+          test -n "$CF_API_TOKEN"
+          response="$(curl -fsS             -H "Authorization: Bearer $CF_API_TOKEN"             -H "Content-Type: application/json"             "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID")"
+          echo "$response" | jq -e --arg id "$CF_ACCOUNT_ID" '.success == true and .result.id == $id' >/dev/null
+          echo "Cloudflare account A: authenticated and account ID matched."
+
+  cloudflare-account-b:
+    runs-on: ubuntu-latest
+    env:
+      CF_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_B_ID }}
+      CF_API_TOKEN: ${{ secrets.CF_ACCOUNT_B_API_TOKEN }}
+    steps:
+      - name: Verify Cloudflare account B
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$CF_ACCOUNT_ID"
+          test -n "$CF_API_TOKEN"
+          response="$(curl -fsS             -H "Authorization: Bearer $CF_API_TOKEN"             -H "Content-Type: application/json"             "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID")"
+          echo "$response" | jq -e --arg id "$CF_ACCOUNT_ID" '.success == true and .result.id == $id' >/dev/null
+          echo "Cloudflare account B: authenticated and account ID matched."
+
+  stripe-test:
+    runs-on: ubuntu-latest
+    env:
+      STRIPE_ACCOUNT_ID: ${{ vars.STRIPE_ACCOUNT_ID }}
+      STRIPE_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
+    steps:
+      - name: Verify Stripe TEST key
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$STRIPE_ACCOUNT_ID"
+          test -n "$STRIPE_KEY"
+          response="$(curl -fsS -u "$STRIPE_KEY:" https://api.stripe.com/v1/account)"
+          echo "$response" | jq -e --arg id "$STRIPE_ACCOUNT_ID" '.id == $id and .livemode == false' >/dev/null
+          echo "Stripe TEST: authenticated, account ID matched, livemode=false."
+
+  stripe-live:
+    runs-on: ubuntu-latest
+    env:
+      STRIPE_ACCOUNT_ID: ${{ vars.STRIPE_ACCOUNT_ID }}
+      STRIPE_KEY: ${{ secrets.STRIPE_LIVE_SECRET_KEY }}
+    steps:
+      - name: Verify Stripe LIVE key
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$STRIPE_ACCOUNT_ID"
+          test -n "$STRIPE_KEY"
+          response="$(curl -fsS -u "$STRIPE_KEY:" https://api.stripe.com/v1/account)"
+          echo "$response" | jq -e --arg id "$STRIPE_ACCOUNT_ID" '.id == $id and .livemode == true' >/dev/null
+          echo "Stripe LIVE: authenticated, account ID matched, livemode=true."
