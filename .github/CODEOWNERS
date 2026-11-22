@@ -1,0 +1,6 @@
+# Security-sensitive automation surfaces
+/.github/workflows/ @shihuiarenjinba-png
+/.github/CODEOWNERS @shihuiarenjinba-png
+/scripts/ci/security_guard.py @shihuiarenjinba-png
+/functions/api/stripe-webhook.js @shihuiarenjinba-png
+/server/stripe-signature.js @shihuiarenjinba-png
