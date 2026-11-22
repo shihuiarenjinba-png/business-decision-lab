@@ -18,3 +18,18 @@ jobs:
 
       - name: Enforce automation security policy
         run: python scripts/ci/security_guard.py
+
+      - name: Parse repository admin hardening script
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            "scripts/admin/harden-github.ps1",
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
