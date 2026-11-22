@@ -51,8 +51,10 @@ jobs:
           set -euo pipefail
           test -n "$STRIPE_ACCOUNT_ID"
           test -n "$STRIPE_KEY"
-          response="$(curl -fsS -u "$STRIPE_KEY:" https://api.stripe.com/v1/account)"
-          echo "$response" | jq -e --arg id "$STRIPE_ACCOUNT_ID" '.id == $id and .livemode == false' >/dev/null
+          account="$(curl -fsS -u "$STRIPE_KEY:" https://api.stripe.com/v1/account)"
+          echo "$account" | jq -e --arg id "$STRIPE_ACCOUNT_ID" '.id == $id' >/dev/null
+          balance="$(curl -fsS -u "$STRIPE_KEY:" https://api.stripe.com/v1/balance)"
+          echo "$balance" | jq -e '.livemode == false' >/dev/null
           echo "Stripe TEST: authenticated, account ID matched, livemode=false."
 
   stripe-live:
@@ -67,6 +69,8 @@ jobs:
           set -euo pipefail
           test -n "$STRIPE_ACCOUNT_ID"
           test -n "$STRIPE_KEY"
-          response="$(curl -fsS -u "$STRIPE_KEY:" https://api.stripe.com/v1/account)"
-          echo "$response" | jq -e --arg id "$STRIPE_ACCOUNT_ID" '.id == $id and .livemode == true' >/dev/null
+          account="$(curl -fsS -u "$STRIPE_KEY:" https://api.stripe.com/v1/account)"
+          echo "$account" | jq -e --arg id "$STRIPE_ACCOUNT_ID" '.id == $id' >/dev/null
+          balance="$(curl -fsS -u "$STRIPE_KEY:" https://api.stripe.com/v1/balance)"
+          echo "$balance" | jq -e '.livemode == true' >/dev/null
           echo "Stripe LIVE: authenticated, account ID matched, livemode=true."
