@@ -4,11 +4,12 @@ const $=id=>document.getElementById(id);
 const yen=v=>v===null||v===undefined?'—':Math.round(v).toLocaleString('ja-JP')+'円';
 const pct=v=>v===null||v===undefined?'—':(v*100).toFixed(1)+'%';
 const num=v=>Number($(v).value||0);
+const requiredNum=v=>{const raw=$(v).value;return raw.trim()===''?undefined:Number(raw)};
 let lastResult=null;
 
 function profile(){
   return {
-    monthlyRevenue:num('monthlyRevenue'),
+    monthlyRevenue:requiredNum('monthlyRevenue'),
     variableCosts:num('variableCosts'),
     fixedLaborCost:num('fixedLaborCost'),
     depreciation:num('depreciation'),
@@ -26,7 +27,7 @@ function profile(){
 function order(){
   return {
     name:$('orderName').value.trim(),
-    revenue:num('orderRevenue'),
+    revenue:requiredNum('orderRevenue'),
     units:num('orderUnits'),
     materials:num('materials'),
     incrementalLabor:num('incrementalLabor'),
