@@ -1,0 +1,74 @@
+name: Reusable Cloudflare Pages preview deploy
+
+on:
+  workflow_call:
+    inputs:
+      project_name:
+        required: true
+        type: string
+      public_dir:
+        required: false
+        type: string
+        default: public
+      cloudflare_account_id:
+        required: true
+        type: string
+    secrets:
+      cloudflare_api_token:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ inputs.cloudflare_account_id }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.cloudflare_api_token }}
+      PROJECT_NAME: ${{ inputs.project_name }}
+      PUBLIC_DIR: ${{ inputs.public_dir }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Validate deployment inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_ACCOUNT_ID"
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test -n "$PROJECT_NAME"
+          test -d "$PUBLIC_DIR"
+          test -f "$PUBLIC_DIR/index.html"
+
+      - name: Verify Cloudflare account
+        shell: bash
+        run: |
+          set -euo pipefail
+          response="$(curl -fsS             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID")"
+          echo "$response" | jq -e --arg id "$CLOUDFLARE_ACCOUNT_ID"             '.success == true and .result.id == $id' >/dev/null
+
+      - name: Ensure Pages project exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          http="$(curl -sS -o /tmp/project.json -w '%{http_code}'             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PROJECT_NAME")"
+
+          if [ "$http" = "200" ]; then
+            echo "Pages project already exists."
+          elif [ "$http" = "404" ]; then
+            curl -fsS -X POST               -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"               -H "Content-Type: application/json"               --data "{\"name\":\"$PROJECT_NAME\",\"production_branch\":\"main\"}"               "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects"               | jq -e '.success == true' >/dev/null
+            echo "Pages project created."
+          else
+            echo "::error::Unexpected Pages lookup HTTP status: $http"
+            jq -c '{success,errors}' /tmp/project.json || true
+            exit 1
+          fi
+
+      - name: Deploy preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@4.166.0 pages deploy "$PUBLIC_DIR"             --project-name "$PROJECT_NAME"             --branch preview             --commit-hash "$GITHUB_SHA"

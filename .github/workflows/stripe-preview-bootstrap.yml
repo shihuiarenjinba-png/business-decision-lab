@@ -2,94 +2,19 @@ name: Bootstrap Stripe TEST preview
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - ".github/workflows/stripe-preview-bootstrap.yml"
 
 permissions:
   contents: read
 
 jobs:
   bootstrap:
-    runs-on: ubuntu-latest
-    env:
-      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_A_ID }}
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CF_ACCOUNT_A_API_TOKEN }}
-      STRIPE_TEST_SECRET_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
-      PROJECT_NAME: business-decision-lab-preview
-      WEBHOOK_URL: https://preview.business-decision-lab-preview.pages.dev/api/stripe-webhook
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-
-      - name: Validate credentials
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -n "$CLOUDFLARE_ACCOUNT_ID"
-          test -n "$CLOUDFLARE_API_TOKEN"
-          test -n "$STRIPE_TEST_SECRET_KEY"
-
-          cf="$(curl -fsS             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN"             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID")"
-          echo "$cf" | jq -e --arg id "$CLOUDFLARE_ACCOUNT_ID" '.success == true and .result.id == $id' >/dev/null
-
-          stripe_account="$(curl -fsS -u "$STRIPE_TEST_SECRET_KEY:" https://api.stripe.com/v1/account)"
-          stripe_balance="$(curl -fsS -u "$STRIPE_TEST_SECRET_KEY:" https://api.stripe.com/v1/balance)"
-          echo "$stripe_account" | jq -e '.id != null' >/dev/null
-          echo "$stripe_balance" | jq -e '.livemode == false' >/dev/null
-          echo "Cloudflare and Stripe TEST credentials validated."
-
-      - name: Put Stripe TEST secret into Pages
-        shell: bash
-        run: |
-          set -euo pipefail
-          printf '%s' "$STRIPE_TEST_SECRET_KEY"             | npx --yes wrangler@latest pages secret put STRIPE_SECRET_KEY                 --project-name "$PROJECT_NAME"
-          echo "STRIPE_SECRET_KEY stored in Cloudflare Pages."
-
-      - name: Ensure Stripe TEST webhook exists and store signing secret
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          endpoints="$(curl -fsS -u "$STRIPE_TEST_SECRET_KEY:"             "https://api.stripe.com/v1/webhook_endpoints?limit=100")"
-
-          existing_id="$(echo "$endpoints" | jq -r --arg url "$WEBHOOK_URL"             '.data[]? | select(.url == $url) | .id' | head -n1)"
-
-          if [ -n "$existing_id" ]; then
-            echo "Stripe TEST webhook already exists: $existing_id"
-            echo "Existing webhook signing secret is not retrievable; keeping the previously stored Cloudflare secret."
-          else
-            echo "Creating Stripe TEST webhook endpoint."
-            created="$(curl -fsS -u "$STRIPE_TEST_SECRET_KEY:"               -X POST https://api.stripe.com/v1/webhook_endpoints               --data-urlencode "url=$WEBHOOK_URL"               --data-urlencode "description=Business Decision Lab preview TEST webhook"               --data-urlencode "metadata[app]=business-decision-lab"               --data-urlencode "metadata[environment]=preview"               --data-urlencode "enabled_events[]=checkout.session.completed"               --data-urlencode "enabled_events[]=customer.subscription.created"               --data-urlencode "enabled_events[]=customer.subscription.updated"               --data-urlencode "enabled_events[]=customer.subscription.deleted"               --data-urlencode "enabled_events[]=invoice.paid"               --data-urlencode "enabled_events[]=invoice.payment_failed")"
-
-            webhook_id="$(echo "$created" | jq -r '.id')"
-            webhook_secret="$(echo "$created" | jq -r '.secret')"
-
-            test -n "$webhook_id"
-            test "$webhook_id" != "null"
-            test -n "$webhook_secret"
-            test "$webhook_secret" != "null"
-
-            printf '%s' "$webhook_secret"               | npx --yes wrangler@latest pages secret put STRIPE_WEBHOOK_SECRET                   --project-name "$PROJECT_NAME"
-
-            unset webhook_secret
-            echo "Created Stripe TEST webhook: $webhook_id"
-            echo "Webhook signing secret stored in Cloudflare Pages without logging the value."
-          fi
-
-      - name: Redeploy preview with current secrets
-        shell: bash
-        run: |
-          set -euo pipefail
-          npx --yes wrangler@latest pages deploy public             --project-name "$PROJECT_NAME"             --branch preview             --commit-hash "$GITHUB_SHA"
-
-      - name: Verify preview webhook endpoint
-        shell: bash
-        run: |
-          set -euo pipefail
-          body="$(curl -fsS "$WEBHOOK_URL")"
-          echo "$body" | jq -e '.ok == true and .endpoint == "stripe-webhook"' >/dev/null
-          echo "Preview Stripe webhook endpoint is reachable."
+    uses: ./.github/workflows/reusable-stripe-test-bootstrap.yml
+    with:
+      project_name: business-decision-lab-preview
+      public_dir: public
+      webhook_url: https://preview.business-decision-lab-preview.pages.dev/api/stripe-webhook
+      cloudflare_account_id: ${{ vars.CF_ACCOUNT_A_ID }}
+      stripe_account_id: ${{ vars.STRIPE_ACCOUNT_ID }}
+    secrets:
+      cloudflare_api_token: ${{ secrets.CF_ACCOUNT_A_API_TOKEN }}
+      stripe_test_secret_key: ${{ secrets.STRIPE_TEST_SECRET_KEY }}

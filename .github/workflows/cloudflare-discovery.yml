@@ -2,16 +2,14 @@ name: Cloudflare infrastructure discovery
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - ".github/workflows/cloudflare-discovery.yml"
 
 permissions:
   contents: read
 
 jobs:
   discover:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
@@ -46,6 +44,7 @@ jobs:
             jq -r '.result[]? | "  - " + .name + " | subdomain=" + (.subdomain // "") + " | production_branch=" + (.production_branch // "")' /tmp/pages.json
           else
             echo "PAGES_ERROR_${LABEL}=$(jq -c '{success,errors}' /tmp/pages.json 2>/dev/null || echo unreadable)"
+            exit 1
           fi
 
           workers_http="$(curl -sS -o /tmp/workers.json -w '%{http_code}'             -H "Authorization: Bearer $CF_API_TOKEN"             "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT_ID/workers/scripts")"
@@ -53,4 +52,7 @@ jobs:
           if [ "$workers_http" = "200" ]; then
             echo "WORKERS_SCRIPTS_${LABEL}:"
             jq -r '.result[]? | "  - " + (.id // .name // "unknown")' /tmp/workers.json
+          else
+            echo "::error::Workers discovery failed with HTTP $workers_http"
+            exit 1
           fi
