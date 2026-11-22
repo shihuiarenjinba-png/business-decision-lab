@@ -8,7 +8,8 @@ permissions:
 
 jobs:
   cloudflare-account-a:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
     env:
       CF_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_A_ID }}
       CF_API_TOKEN: ${{ secrets.CF_ACCOUNT_A_API_TOKEN }}
@@ -24,7 +25,8 @@ jobs:
           echo "Cloudflare account A: authenticated and account ID matched."
 
   cloudflare-account-b:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
     env:
       CF_ACCOUNT_ID: ${{ vars.CF_ACCOUNT_B_ID }}
       CF_API_TOKEN: ${{ secrets.CF_ACCOUNT_B_API_TOKEN }}
@@ -40,7 +42,8 @@ jobs:
           echo "Cloudflare account B: authenticated and account ID matched."
 
   stripe-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
     env:
       STRIPE_ACCOUNT_ID: ${{ vars.STRIPE_ACCOUNT_ID }}
       STRIPE_KEY: ${{ secrets.STRIPE_TEST_SECRET_KEY }}
@@ -58,12 +61,13 @@ jobs:
           echo "Stripe TEST: authenticated, account ID matched, livemode=false."
 
   stripe-live:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
+    timeout-minutes: 5
     env:
       STRIPE_ACCOUNT_ID: ${{ vars.STRIPE_ACCOUNT_ID }}
       STRIPE_KEY: ${{ secrets.STRIPE_LIVE_SECRET_KEY }}
     steps:
-      - name: Verify Stripe LIVE key
+      - name: Verify Stripe LIVE key (read only)
         shell: bash
         run: |
           set -euo pipefail
@@ -73,4 +77,4 @@ jobs:
           echo "$account" | jq -e --arg id "$STRIPE_ACCOUNT_ID" '.id == $id' >/dev/null
           balance="$(curl -fsS -u "$STRIPE_KEY:" https://api.stripe.com/v1/balance)"
           echo "$balance" | jq -e '.livemode == true' >/dev/null
-          echo "Stripe LIVE: authenticated, account ID matched, livemode=true."
+          echo "Stripe LIVE: authenticated, account ID matched, livemode=true. No mutation performed."
